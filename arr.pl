@@ -87,21 +87,10 @@ sub tar_cmd_from_mime {
 
 sub split_filename {
     my $filename = shift;
-    my $ext_index = rindex($filename, ".");
-    if ($ext_index < 0) {
-        return ("", "");
-    }
-
-    my $tar_index = rindex(substr($filename, 0, $ext_index), ".");
-    my $tar_str = "";
-    if ($tar_index > 0) {
-	my $before_ext_index = length($filename) + 1 - $ext_index;
-	$tar_str = substr($filename, $tar_index, $before_ext_index);
-    }
-    if ($tar_str eq ".tar") {
-        return (substr($filename, 0, $tar_index), substr($filename, $tar_index));
+    if ($filename =~ /(.+?)((\.tar)?\.[^,.]+)$/) {
+        return $1, $2;
     } else {
-        return (substr($filename, 0, $ext_index), substr($filename, $ext_index));
+        return "", "";
     }
 }
 
@@ -171,7 +160,7 @@ sub do_extract {
     my $correct = 0;
     my $is_tarable = extension_from_mime($mimetype);
     if ($is_tarable) {
-	$correct = iscorrect_tar($file);
+	$correct = iscorrect_tar($file, $mimetype);
     } else {
 	$correct = iscorrect_7z($file);
     }
@@ -200,9 +189,8 @@ sub do_extract {
 }
 
 sub iscorrect_tar {
-    my $filename = shift;
-    my ($_no, $ext) = split_filename($filename);
-    my $subcmd = tar_cmd_from_ext($ext);
+    my ($filename, $mimetype) = @_;
+    my $subcmd = tar_cmd_from_mime($mimetype);
 
     my @args = ("tar", "tf" . $subcmd, $filename);
     my @out = qx(@args);
